@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaxTrack - Vehicle Tax Verification</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- ─── Navbar ─────────────────────────────── -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="nav-icon">&#9881;</span> TaxTrack
+        </div>
+        <div class="nav-links">
+            <a href="#dashboard" class="nav-link active" data-tab="dashboard">Dashboard</a>
+            <a href="#vehicles" class="nav-link" data-tab="vehicles">Vehicles</a>
+            <a href="#scan" class="nav-link" data-tab="scan">Scan</a>
+            <a href="#camera" class="nav-link" data-tab="camera">Camera</a>
+        </div>
+    </nav>
+
+    <main class="container">
+
+        <!-- ─── Dashboard Tab ─────────────────────── -->
+        <section id="tab-dashboard" class="tab-content active">
+            <h1 class="page-title">Dashboard</h1>
+
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-value" id="statTotal">--</div>
+                    <div class="stat-label">Total Vehicles</div>
+                </div>
+                <div class="stat-card stat-paid">
+                    <div class="stat-value" id="statPaid">--</div>
+                    <div class="stat-label">Tax Paid</div>
+                </div>
+                <div class="stat-card stat-unpaid">
+                    <div class="stat-value" id="statUnpaid">--</div>
+                    <div class="stat-label">Tax Unpaid</div>
+                </div>
+                <div class="stat-card stat-expired">
+                    <div class="stat-value" id="statExpired">--</div>
+                    <div class="stat-label">Tax Expired</div>
+                </div>
+                <div class="stat-card stat-pending">
+                    <div class="stat-value" id="statPending">--</div>
+                    <div class="stat-label">Tax Pending</div>
+                </div>
+                <div class="stat-card stat-scans">
+                    <div class="stat-value" id="statScans">--</div>
+                    <div class="stat-label">Total Scans</div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>Recent Scans</h2>
+                <table class="data-table" id="recentScansTable">
+                    <thead>
+                        <tr>
+                            <th>Plate</th>
+                            <th>OCR Text</th>
+                            <th>Status</th>
+                            <th>Confidence</th>
+                            <th>Scanned At</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentScansBody">
+                        <tr><td colspan="5" class="empty-state">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ─── Vehicles Tab ──────────────────────── -->
+        <section id="tab-vehicles" class="tab-content">
+            <div class="page-header">
+                <h1 class="page-title">Vehicles</h1>
+                <button class="btn btn-primary" onclick="showAddVehicleModal()">+ Add Vehicle</button>
+            </div>
+
+            <div class="toolbar">
+                <input type="text" id="searchInput" class="input" placeholder="Search plate or owner..." oninput="debouncedLoadVehicles()">
+                <select id="statusFilter" class="input" onchange="loadVehicles()">
+                    <option value="">All Statuses</option>
+                    <option value="paid">Paid</option>
+                    <option value="unpaid">Unpaid</option>
+                    <option value="expired">Expired</option>
+                    <option value="pending">Pending</option>
+                </select>
+            </div>
+
+            <div class="panel">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Plate</th>
+                            <th>Owner</th>
+                            <th>Type</th>
+                            <th>Brand</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vehiclesBody">
+                        <tr><td colspan="7" class="empty-state">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ─── Scan Tab ──────────────────────────── -->
+        <section id="tab-scan" class="tab-content">
+            <h1 class="page-title">Vehicle Scan</h1>
+
+            <div class="scan-grid">
+                <!-- Image Upload -->
+                <div class="panel">
+                    <h2>Upload Image</h2>
+                    <div class="upload-zone" id="dropZone">
+                        <input type="file" id="imageFile" accept="image/*" hidden>
+                        <div class="upload-placeholder" id="uploadPlaceholder">
+                            <div class="upload-icon">&#128247;</div>
+                            <p>Drag & drop a vehicle image or click to browse</p>
+                            <button class="btn btn-secondary" onclick="document.getElementById('imageFile').click()">
+                                Choose File
+                            </button>
+                        </div>
+                        <img id="imagePreview" class="image-preview" style="display:none" alt="Preview">
+                    </div>
+                    <button class="btn btn-primary btn-full" id="scanBtn" onclick="scanImage()" disabled>
+                        Run Detection + OCR
+                    </button>
+                </div>
+
+                <!-- Manual Entry -->
+                <div class="panel">
+                    <h2>Manual Plate Lookup</h2>
+                    <div class="form-group">
+                        <label for="plateInput">Plate Number</label>
+                        <input type="text" id="plateInput" class="input" placeholder="e.g. AB1234CD" maxlength="20">
+                    </div>
+                    <button class="btn btn-primary btn-full" onclick="lookupPlate()">
+                        Lookup Plate
+                    </button>
+                </div>
+            </div>
+
+            <!-- Scan Results -->
+            <div class="panel" id="scanResult" style="display:none">
+                <h2>Scan Results</h2>
+                <div class="result-grid">
+                    <div class="result-item">
+                        <span class="result-label">Plate Number</span>
+                        <span class="result-value" id="resultPlate">--</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Vehicle Found</span>
+                        <span class="result-value" id="resultFound">--</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Tax Status</span>
+                        <span class="result-value" id="resultStatus">--</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Detection Confidence</span>
+                        <span class="result-value" id="resultDetConf">--</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">OCR Confidence</span>
+                        <span class="result-value" id="resultOcrConf">--</span>
+                    </div>
+                    <div class="result-item" id="ownerInfo" style="display:none">
+                        <span class="result-label">Owner</span>
+                        <span class="result-value" id="resultOwner">--</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── Camera Tab ─────────────────────────── -->
+        <section id="tab-camera" class="tab-content">
+            <h1 class="page-title">Live Camera Feed</h1>
+
+            <div class="camera-layout">
+                <!-- Video Feed -->
+                <div class="panel camera-feed-panel">
+                    <div class="camera-toolbar">
+                        <div class="camera-source-selector">
+                            <button class="source-btn active" id="srcDemoBtn" onclick="selectSource('demo')">
+                                &#127909; Traffic Demo Video
+                            </button>
+                            <button class="source-btn" id="srcWebcamBtn" onclick="selectSource('webcam')">
+                                &#128247; Live Webcam
+                            </button>
+                        </div>
+                        <input type="hidden" id="cameraSource" value="demo">
+                        <div class="camera-controls">
+                            <button class="btn btn-primary" id="startStreamBtn" onclick="startStream()">Start Feed</button>
+                            <button class="btn btn-danger" id="stopStreamBtn" onclick="stopStream()" disabled>Stop</button>
+                        </div>
+                    </div>
+                    <div class="camera-viewport" id="cameraViewport">
+                        <img id="cameraStream" class="camera-stream" alt="Live camera feed" style="display:none">
+                        <div class="camera-placeholder" id="cameraPlaceholder">
+                            <div class="camera-icon">&#127909;</div>
+                            <p>Click <strong>Start Feed</strong> to begin live detection</p>
+                            <span class="camera-hint">Select Traffic Demo Video or Live Webcam, then click Start Feed</span>
+                        </div>
+                    </div>
+                    <div class="camera-status-bar" id="cameraStatusBar">
+                        <span class="camera-status-dot" id="statusDot"></span>
+                        <span id="statusText">Idle</span>
+                        <span class="camera-mode" id="cameraMode">--</span>
+                    </div>
+                </div>
+
+                <!-- Detection Log -->
+                <div class="panel camera-log-panel">
+                    <h2>Detected Plates</h2>
+                    <div class="plate-log" id="plateLog">
+                        <div class="empty-state" id="plateLogEmpty">No plates detected yet.<br>Start the camera feed to begin.</div>
+                    </div>
+                    <div class="camera-stats-row">
+                        <div class="camera-stat">
+                            <span class="camera-stat-value" id="camTotalDetections">0</span>
+                            <span class="camera-stat-label">Detections</span>
+                        </div>
+                        <div class="camera-stat">
+                            <span class="camera-stat-value" id="camUniquePlates">0</span>
+                            <span class="camera-stat-label">Unique Plates</span>
+                        </div>
+                        <div class="camera-stat">
+                            <span class="camera-stat-value" id="camLastPlate">--</span>
+                            <span class="camera-stat-label">Last Plate</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary btn-full" onclick="clearPlateLog()">Clear Log</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ─── Add Vehicle Modal ──────────────────── -->
+    <div class="modal-overlay" id="addVehicleModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Register New Vehicle</h2>
+                <button class="modal-close" onclick="closeModal('addVehicleModal')">&times;</button>
+            </div>
+            <form id="addVehicleForm" onsubmit="addVehicle(event)">
+                <div class="form-group">
+                    <label>Plate Number *</label>
+                    <input type="text" name="plate_number" class="input" required maxlength="20">
+                </div>
+                <div class="form-group">
+                    <label>Owner Name *</label>
+                    <input type="text" name="owner_name" class="input" required maxlength="150">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Vehicle Type</label>
+                        <select name="vehicle_type" class="input">
+                            <option value="car">Car</option>
+                            <option value="truck">Truck</option>
+                            <option value="motorcycle">Motorcycle</option>
+                            <option value="bus">Bus</option>
+                            <option value="van">Van</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Brand</label>
+                        <input type="text" name="vehicle_brand" class="input" maxlength="100">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Color</label>
+                        <input type="text" name="vehicle_color" class="input" maxlength="50">
+                    </div>
+                    <div class="form-group">
+                        <label>Tax Status</label>
+                        <select name="tax_status" class="input">
+                            <option value="pending">Pending</option>
+                            <option value="paid">Paid</option>
+                            <option value="unpaid">Unpaid</option>
+                            <option value="expired">Expired</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea name="notes" class="input" rows="2"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addVehicleModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Register Vehicle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

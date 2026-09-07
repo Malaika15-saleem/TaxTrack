@@ -1,0 +1,44 @@
+# Ignore database
+*.db
+*.sqlite3
+
+# Ignore uploads
+uploads/*
+!uploads/.gitkeep
+
+# Ignore Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Ignore virtual environment
+venv/
+.venv/
+env/
+
+# Ignore IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore environment
+.env
+
+# Ignore YOLO model weights
+*.pt
+*.onnx
+runs/
+
+# Ignore PaddleOCR cache
+.paddleocr/
+
+# OS files
+.DS_Store
+Thumbs.db
+archive/
+archive.zip
+dataset/
+training_data/
+videos/

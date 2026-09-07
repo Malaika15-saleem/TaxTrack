@@ -1,0 +1,8 @@
+# YOLO dataset config for TaxTrack vehicle + plate detection
+path: C:/Users/03-135221-015/Desktop/TaxTrack/training_data/yolo_dataset
+train: images/train
+val: images/val
+
+names:
+  0: vehicle
+  1: license_plate
