@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; media-src data: blob:; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="color-scheme" content="light dark">
+  <title>TaxTrack AI — Vehicle compliance workspace</title>
+  <style>
+    :root {
+      --green: #01411c; --green-hover: #07582b; --white: #fff; --page: #f1f6f2; --surface: #fff;
+      --surface-soft: #f7faf7; --ink: #172c20; --muted: #506457; --line: #d9e4dc; --accent: #01411c;
+      --accent-soft: #e6f1e9; --alert: #b3321f; --alert-soft: #fff0ed; --alert-line: #edc2b9;
+      --processing: #755800; --processing-soft: #fff5cf; --yellow: #f2cf54; --box-green: #5bdf8c; --box-red: #f16b55;
+      --focus: #8b6400; --camera: #102219; --camera-ink: #f4faf5; --camera-muted: #bed0c3;
+      --shadow: 0 3px 16px rgb(19 57 31 / 4%); --radius: 12px; --mono: Consolas, 'Cascadia Mono', 'Liberation Mono', monospace;
+      --sans: 'Segoe UI', 'Helvetica Neue', sans-serif; color-scheme: light;
+    }
+    :root[data-theme="dark"] {
+      --page: #111b15; --surface: #19271f; --surface-soft: #203027; --ink: #ecf5ee; --muted: #b2c4b7;
+      --line: #354b3d; --accent: #91dbab; --accent-soft: #263f2e; --alert: #ff9b88; --alert-soft: #39251f;
+      --alert-line: #7e463b; --processing: #f2d879; --processing-soft: #3c351d; --focus: #f2cf54;
+      --shadow: none; color-scheme: dark;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.55 var(--sans); }
+    button, input, summary { font: inherit; }
+    button, summary { -webkit-tap-highlight-color: transparent; }
+    button { cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: .52; }
+    button, input, a, summary { touch-action: manipulation; }
+    :focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+    h1, h2, h3, p { margin: 0; }
+    h2 { font-size: 16px; font-weight: 650; letter-spacing: -.2px; }
+    h3 { font-size: 14px; font-weight: 650; }
+    svg { flex: 0 0 auto; }
+    [hidden] { display: none !important; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .skip-link { position: fixed; top: 8px; left: 8px; z-index: 10; padding: 10px 18px; background: var(--surface); color: var(--ink); transform: translateY(-160%); }
+    .skip-link:focus { transform: none; }
+    .site-header { color: var(--white); background: var(--green); border-bottom: 3px solid var(--white); }
+    .header-inner { max-width: 1440px; margin: auto; min-height: 108px; padding: 20px 36px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .brand { display: flex; align-items: center; gap: 17px; min-width: 0; }
+    .emblem { width: 62px; height: 62px; }
+    .brand h1 { font-size: 28px; line-height: 1.15; letter-spacing: -.9px; font-weight: 650; }
+    .brand p { margin-top: 7px; font-size: 12px; color: #d9e9df; }
+    .header-aside { display: flex; align-items: center; gap: 22px; flex-shrink: 0; }
+    .jurisdiction { text-align: right; font-size: 11px; color: #d9e9df; }
+    .jurisdiction strong { display: block; font-size: 12px; letter-spacing: 1.8px; color: var(--white); }
+    .theme-button { min-width: 44px; height: 44px; padding: 0 12px; border: 1px solid #709880; border-radius: 8px; background: transparent; color: var(--white); display: flex; align-items: center; gap: 8px; }
+    .site-header :focus-visible { outline-color: var(--yellow); }
+    .theme-button:hover { background: #155532; }
+    main { max-width: 1440px; margin: auto; padding: 28px 36px 18px; }
+    .workspace-heading { display: flex; justify-content: space-between; gap: 12px; align-items: end; margin-bottom: 19px; }
+    .eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; color: var(--muted); }
+    .workspace-heading h2 { font-size: 23px; margin-top: 4px; font-weight: 600; letter-spacing: -.6px; }
+    .offline-label { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; }
+    .dot { width: 6px; height: 6px; background: currentColor; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+    .toolbar { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 20px; }
+    .sources { display: flex; min-width: 0; padding: 4px; gap: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+    .source-button { display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 44px; padding: 9px 16px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font-size: 13px; }
+    .source-button[aria-pressed="true"] { background: var(--green); color: var(--white); }
+    .source-button:not([aria-pressed="true"]):hover { background: var(--surface-soft); color: var(--ink); }
+    .toolbar-actions { display: flex; gap: 8px; }
+    .button { min-height: 44px; border: 1px solid var(--line); border-radius: 8px; padding: 9px 14px; background: var(--surface); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; font-size: 12px; }
+    .button:not(:disabled):hover { border-color: var(--accent); background: var(--accent-soft); }
+    .button.primary { background: var(--green); border-color: var(--green); color: var(--white); }
+    .button.primary:hover { background: var(--green-hover); }
+    .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 23px; }
+    .stat { position: relative; padding: 18px 20px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
+    .stat-label { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .stat-value { display: block; font-size: clamp(25px, 3vw, 34px); line-height: 1.2; margin: 11px 0 8px; font-weight: 600; letter-spacing: -1px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .stat-value .currency { font-size: 12px; letter-spacing: .6px; color: var(--muted); margin-right: 6px; }
+    .stat-note { font-size: 10px; color: var(--muted); }
+    .stat-symbol { position: absolute; top: 16px; right: 17px; color: var(--accent); opacity: .8; }
+    .stat.flagged.has-flags .stat-value, .stat.flagged.has-flags .stat-symbol { color: var(--alert); }
+    .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.95fr) minmax(290px, 1fr); gap: 22px; align-items: start; }
+    .column { min-width: 0; display: grid; gap: 20px; }
+    .card { min-width: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); overflow: hidden; }
+    .card-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 17px 20px; border-bottom: 1px solid var(--line); }
+    .card-heading > div { min-width: 0; overflow-wrap: anywhere; }
+    .card-heading p { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .media-strip > span, .section-label > span { min-width: 0; overflow-wrap: anywhere; }
+    .tag { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 4px 7px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); white-space: nowrap; }
+    .camera-wrap { padding: 12px; padding-bottom: 0; }
+    .camera-surface { position: relative; aspect-ratio: 16 / 9; min-height: 270px; background: var(--camera); color: var(--camera-ink); border-radius: 7px; overflow: hidden; }
+    #camera-canvas { display: block; width: 100%; height: 100%; position: absolute; inset: 0; object-fit: contain; }
+    .camera-top, .camera-bottom { position: absolute; left: 16px; right: 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; pointer-events: none; font: 10px/1.4 var(--mono); letter-spacing: .5px; }
+    .camera-top { top: 14px; z-index: 2; }
+    .camera-top span, .camera-bottom span { background: rgb(10 28 17 / 88%); padding: 5px 8px; border-radius: 3px; }
+    .camera-bottom { bottom: 13px; color: var(--camera-muted); }
+    .camera-indicator { color: var(--camera-ink); }
+    .camera-indicator.is-recording { color: var(--box-green); }
+    .camera-empty { position: absolute; inset: 48px 16px 45px; display: flex; flex-direction: column; justify-content: safe center; align-items: center; text-align: center; gap: 9px; overflow-y: auto; }
+    .camera-empty > * { flex-shrink: 0; }
+    .camera-empty .empty-icon { width: 44px; height: 44px; padding: 11px; border: 1px solid #415b49; border-radius: 50%; color: #bad2c1; }
+    .camera-empty h3 { font-size: 18px; font-weight: 550; letter-spacing: -.2px; }
+    .camera-empty p { font-size: 11px; color: var(--camera-muted); max-width: 365px; }
+    .camera-empty button { background: transparent; color: var(--camera-ink); border-color: #6c8f79; min-height: 38px; font-size: 11px; margin-top: 2px; }
+    .camera-empty button:hover { color: var(--green); }
+    .media-strip { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 11px 20px; font-size: 10px; color: var(--muted); }
+    .media-status { display: flex; gap: 6px; align-items: center; }
+    .media-status[data-state="playing"] { color: var(--accent); }
+    .media-status[data-state="blocked"], .media-status[data-state="error"] { color: var(--processing); }
+    .pipeline { border-top: 1px solid var(--line); padding: 16px 20px; }
+    .section-label { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 13px; }
+    .section-label span { font-size: 10px; color: var(--muted); }
+    .stages { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; padding: 0; margin: 0; list-style: none; }
+    .stage { position: relative; text-align: center; font-size: 9px; color: var(--muted); }
+    .stage:not(:last-child)::after { content: ''; position: absolute; left: calc(50% + 19px); right: calc(-50% + 19px); top: 14px; height: 1px; background: var(--line); }
+    .stage-number { display: grid; place-items: center; width: 29px; height: 29px; border-radius: 50%; border: 1px solid var(--line); margin: 0 auto 7px; font: 10px var(--mono); background: var(--surface-soft); }
+    .stage.is-current .stage-number { border-color: var(--processing); color: var(--processing); background: var(--processing-soft); }
+    .stage.is-done .stage-number { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+    .stage.is-flagged .stage-number { border-color: var(--alert); color: var(--alert); background: var(--alert-soft); }
+    .pipeline-note { font-size: 10px; line-height: 1.6; color: var(--muted); margin-top: 13px; }
+    .evidence { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.5fr); gap: 17px; padding: 17px 20px; border-top: 1px solid var(--line); background: var(--surface-soft); }
+    .crop-frame { min-height: 68px; height: 76px; margin-top: 8px; border: 1px dashed var(--line); border-radius: 5px; display: grid; place-items: center; background: var(--surface); overflow: hidden; }
+    .crop-frame span { color: var(--muted); font-size: 10px; padding: 4px; text-align: center; }
+    #crop-canvas { display: block; max-width: 100%; max-height: 72px; object-fit: contain; }
+    .small-note { font-size: 10px; color: var(--muted); overflow-wrap: anywhere; margin-top: 7px; }
+    .plate-reading { min-height: 37px; font: 600 clamp(17px, 2vw, 24px)/1.35 var(--mono); letter-spacing: 1px; padding-top: 7px; overflow-wrap: anywhere; }
+    .evidence-label { color: var(--muted); font-size: 10px; }
+    .evidence-label.assigned { color: var(--processing); font-weight: 650; }
+    .badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 3px 7px; border-radius: 4px; background: var(--surface-soft); color: var(--muted); }
+    .badge.good { color: var(--accent); background: var(--accent-soft); }
+    .badge.flag { color: var(--alert); background: var(--alert-soft); }
+    .badge.wait { color: var(--processing); background: var(--processing-soft); }
+    .table-wrap { overflow-x: auto; max-width: 100%; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 11px; min-width: 635px; }
+    th { padding: 11px 15px; background: var(--surface-soft); color: var(--muted); font-size: 9px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; white-space: nowrap; }
+    td { padding: 13px 15px; border-top: 1px solid var(--line); vertical-align: top; }
+    td small { display: block; font-size: 9px; color: var(--muted); margin-top: 4px; max-width: 150px; }
+    .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+    .log-empty { padding: 32px 20px; text-align: center; }
+    .log-empty p { color: var(--muted); font-size: 11px; margin-top: 5px; }
+    .card-foot { padding: 10px 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; }
+    .alert-intro { padding: 13px 20px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 10px; }
+    .alert-empty { padding: 36px 25px 34px; text-align: center; }
+    .alert-empty svg { color: var(--accent); margin-bottom: 12px; }
+    .alert-empty h3 { font-size: 13px; }
+    .alert-empty p { font-size: 11px; color: var(--muted); margin-top: 7px; }
+    .alert-list { padding: 0; margin: 0; list-style: none; max-height: 410px; overflow-y: auto; }
+    .alert-item { padding: 16px 20px; border-top: 1px solid var(--alert-line); background: var(--alert-soft); border-left: 3px solid var(--alert); }
+    .alert-item:first-child { border-top: 0; }
+    .alert-title { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 5px; color: var(--alert); font-weight: 650; overflow-wrap: anywhere; }
+    .alert-item p { font-size: 10px; margin-top: 6px; color: var(--muted); overflow-wrap: anywhere; }
+    .alert-item ul { padding-left: 16px; margin: 9px 0; font-size: 11px; }
+    .alert-dues { font: 600 12px var(--mono); color: var(--alert); }
+    .manual-body { padding: 18px 20px 20px; }
+    .manual-body label { display: block; font-size: 11px; font-weight: 600; margin-bottom: 8px; }
+    .input-row { display: flex; gap: 7px; }
+    .input-row input { min-width: 0; width: 100%; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-soft); color: var(--ink); padding: 10px; font: 13px var(--mono); min-height: 44px; text-transform: uppercase; }
+    .input-row input::placeholder { color: var(--muted); text-transform: none; }
+    .input-row input[aria-invalid="true"] { border-color: var(--processing); }
+    .manual-notice { font-size: 10px; color: var(--muted); margin-top: 8px; }
+    .manual-error { color: var(--processing); font-size: 11px; margin-top: 8px; }
+    .examples { margin-top: 18px; }
+    .examples summary { cursor: pointer; color: var(--muted); font-size: 11px; padding: 7px 0; min-height: 36px; }
+    .example-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 7px; }
+    .example-button { min-width: 0; min-height: 44px; padding: 7px 8px; text-align: left; border: 1px solid var(--line); border-radius: 5px; background: var(--surface-soft); color: var(--ink); font: 10px var(--mono); }
+    .example-button small { display: block; margin-top: 4px; font: 9px var(--sans); color: var(--muted); }
+    .example-button:hover { border-color: var(--accent); }
+    .manual-result { margin-top: 15px; padding: 13px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-soft); overflow-wrap: anywhere; }
+    .manual-result.flagged { border-color: var(--alert-line); background: var(--alert-soft); }
+    .manual-result p { font-size: 11px; margin-top: 7px; }
+    .manual-result ul { margin: 8px 0; padding-left: 17px; font-size: 11px; }
+    .disclosure { padding: 17px 20px; border: 1px solid var(--line); border-radius: var(--radius); }
+    .disclosure p { font-size: 11px; color: var(--muted); margin-top: 8px; }
+    .help { margin-top: 24px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
+    .help > summary { padding: 16px 20px; cursor: pointer; font-size: 12px; font-weight: 600; }
+    .help-content { padding: 0 20px 20px; font-size: 12px; overflow-wrap: anywhere; }
+    .help-content h3 { margin: 20px 0 8px; }
+    .help-content p { margin: 8px 0; max-width: 900px; }
+    .help-content pre { padding: 14px; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 6px; white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.8 var(--mono); }
+    .help-content li { margin: 6px 0; }
+    footer { max-width: 1440px; margin: auto; padding: 6px 36px 26px; text-align: center; color: var(--muted); font-size: 10px; }
+    #decoder { position: fixed; width: 1px; height: 1px; top: 0; left: 0; opacity: 0; pointer-events: none; clip-path: inset(50%); }
+    .noscript { padding: 16px; background: var(--processing-soft); color: var(--processing); }
+    @media (max-width: 1050px) { .header-inner { padding-inline: 24px; } main { padding-inline: 24px; } .dashboard-grid { grid-template-columns: minmax(0, 1.65fr) minmax(280px, 1fr); gap: 16px; } .stat { padding-inline: 16px; } .stat-symbol { display: none; } .evidence { grid-template-columns: minmax(0, .85fr) minmax(0, 1.2fr); gap: 12px; } }
+    @media (max-width: 820px) { .dashboard-grid { grid-template-columns: minmax(0, 1fr); } .jurisdiction { display: none; } .camera-surface { min-height: 290px; } .stats { gap: 10px; } .stat-label { font-size: 11px; } .evidence { grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr); } }
+    @media (max-width: 540px) {
+      .header-inner { padding: 19px 16px; gap: 12px; align-items: flex-start; } .brand { gap: 10px; align-items: flex-start; } .emblem { width: 42px; height: 42px; }
+      .brand h1 { font-size: 24px; } .brand p { font-size: 10px; line-height: 1.6; } .theme-button { width: 44px; padding: 0; justify-content: center; } .theme-button span { display: none; }
+      main { padding: 21px 14px 16px; } .workspace-heading { align-items: start; } .workspace-heading h2 { font-size: 20px; } .offline-label { font-size: 0; padding-top: 7px; } .offline-label svg { width: 16px; }
+      .toolbar { flex-wrap: wrap; gap: 10px; } .sources { width: 100%; } .source-button { flex: 1; font-size: 11px; padding-inline: 5px; gap: 5px; } .source-button svg { width: 14px; }
+      .toolbar-actions { margin-left: auto; } .toolbar-actions .button { padding-block: 7px; } .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-bottom: 16px; }
+      .stat { padding: 14px; } .stat-value { font-size: 29px; margin-block: 8px 5px; } .stat-note { font-size: 9px; }
+      .card-heading { padding: 15px; } h2 { font-size: 14px; } .card-heading p { font-size: 10px; } .tag { font-size: 8px; letter-spacing: .6px; }
+      .camera-wrap { padding: 8px 8px 0; } .camera-surface { min-height: 275px; } .camera-top, .camera-bottom { left: 10px; right: 10px; font-size: 8px; gap: 4px; }
+      .camera-empty { inset-inline: 13px; gap: 8px; } .camera-empty h3 { font-size: 16px; } .camera-empty p { font-size: 10px; }
+      .media-strip { padding-inline: 14px; flex-wrap: wrap; font-size: 9px; } .pipeline { padding: 15px 12px; } .section-label span { font-size: 9px; }
+      .stages { gap: 3px; } .stage { font-size: 8px; } .stage-number { width: 26px; height: 26px; } .stage:not(:last-child)::after { top: 12px; left: calc(50% + 16px); right: calc(-50% + 16px); }
+      .evidence { padding: 15px; gap: 12px; grid-template-columns: minmax(0, 1fr); } .crop-frame { max-width: 260px; } .plate-reading { font-size: 22px; }
+      .manual-body, .alert-intro, .disclosure { padding-inline: 15px; } .help > summary { padding-inline: 15px; } .help-content { padding-inline: 15px; } footer { padding-inline: 18px; }
+    }
+    @media (prefers-reduced-motion: no-preference) { .button, .theme-button, .source-button { transition: background-color 140ms ease, border-color 140ms ease; } .stats { animation: settle 350ms ease-out both; } .dashboard-grid { animation: settle 450ms 60ms ease-out both; } @keyframes settle { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#workspace">Skip to workspace</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <svg class="emblem" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="none" stroke="white" stroke-width="1.3"/><circle cx="32" cy="32" r="25.5" fill="none" stroke="white" stroke-opacity=".3"/><path d="M39 15a18 18 0 1 0 9 29 16 16 0 0 1-9-29Z" fill="white"/><path d="m44 17 1.7 5.3h5.6l-4.5 3.3 1.7 5.3-4.5-3.3-4.5 3.3 1.7-5.3-4.5-3.3h5.6Z" fill="white"/></svg>
+        <div><h1>TaxTrack AI</h1><p>Vehicle tax &amp; registration compliance monitoring · Punjab, Pakistan.</p></div>
+      </div>
+      <div class="header-aside"><div class="jurisdiction"><strong>PUNJAB</strong>Offline demonstration workspace</div><button id="theme-toggle" class="theme-button" type="button" aria-label="Use dark theme" aria-pressed="false"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M20 14a8.5 8.5 0 0 1-10-10A8.5 8.5 0 1 0 20 14Z"/></svg><span id="theme-label">Dark mode</span></button></div>
+    </div>
+  </header>
+  <noscript><p class="noscript">JavaScript is required for local video playback and manual checks. No camera results are available without it.</p></noscript>
+  <main id="workspace" tabindex="-1">
+    <div class="workspace-heading"><div><p class="eyebrow">Monitoring / Session workspace</p><h2>Vehicle compliance overview</h2></div><span class="offline-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>On-device · No transmission</span></div>
+    <div class="toolbar" aria-label="Camera and session controls">
+      <div class="sources" role="group" aria-label="Video source">
+        <button class="source-button" type="button" data-source="closeup" aria-pressed="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/></svg>Real plate video</button>
+        <button class="source-button" type="button" data-source="traffic" aria-pressed="false"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="8" y="2" width="8" height="17" rx="3"/><path d="M12 19v3"/><circle cx="12" cy="6" r="1"/><circle cx="12" cy="10.5" r="1"/><circle cx="12" cy="15" r="1"/></svg>Traffic light view</button>
+      </div>
+      <div class="toolbar-actions"><button id="pause-button" class="button" type="button" disabled><span id="pause-glyph" aria-hidden="true">Ⅱ</span><span id="pause-label">Pause</span></button><button id="reset-button" class="button" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1 8M4 4v6h6"/></svg>Reset</button></div>
+    </div>
+    <section class="stats" aria-label="Automatic camera statistics; manual checks are excluded">
+      <article class="stat"><p class="stat-label">Vehicles scanned</p><svg class="stat-symbol" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 8V3h5m8 0h5v5m0 8v5h-5M8 21H3v-5M7 12h10"/></svg><strong class="stat-value" id="stat-scanned">0</strong><p class="stat-note">Unique identities per source</p></article>
+      <article class="stat"><p class="stat-label">Compliant</p><svg class="stat-symbol" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg><strong class="stat-value" id="stat-compliant">0</strong><p class="stat-note">Paid token tax · Valid registration</p></article>
+      <article class="stat flagged" id="flag-stat"><p class="stat-label">Flagged</p><svg class="stat-symbol" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 22V3m0 0c5-4 9 4 14 0v11c-5 4-9-4-14 0"/></svg><strong class="stat-value" id="stat-flagged">0</strong><p class="stat-note">Noncompliance or review required</p></article>
+      <article class="stat"><p class="stat-label">Total dues identified</p><strong class="stat-value"><span class="currency">PKR</span><span id="stat-dues">0</span></strong><p class="stat-note">Known sample amounts only</p></article>
+    </section>
+    <div class="dashboard-grid">
+      <div class="column">
+        <section class="card" aria-labelledby="camera-title">
+          <div class="card-heading"><div><h2 id="camera-title">Camera workspace</h2><p id="source-description">Real plate video · CAM-01</p></div><span class="tag">Prerecorded demo</span></div>
+          <div class="camera-wrap"><div class="camera-surface">
+            <canvas id="camera-canvas" width="640" height="360" role="img" aria-label="Camera waiting for an embedded video. No footage or detections are simulated."></canvas>
+            <div class="camera-top"><span><b id="record-indicator" class="camera-indicator">NO MEDIA</b> &nbsp; <b id="camera-id">CAM-01</b></span><span id="camera-clock">--:--:--</span></div>
+            <div class="camera-empty" id="media-overlay"><svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M4 9V4h5m6 0h5v5m0 6v5h-5M9 20H4v-5m4-3h8m-4-4v8"/></svg><h3 id="media-title">Waiting for your footage</h3><p id="media-message">The selected clips have not been supplied. Camera statistics will stay at zero until actual videos are embedded.</p><button class="button" id="media-action" type="button">Prepare &amp; embed clips</button></div>
+            <div class="camera-bottom"><span>PRERECORDED DEMO · REPLAY</span><span id="frame-label">NO EMBEDDED FRAMES</span></div>
+          </div></div>
+          <div class="media-strip"><span id="media-status" class="media-status" data-state="waiting"><i class="dot" aria-hidden="true"></i><span id="media-status-text">Waiting for uploaded clips</span></span><span id="media-metadata">0 / 2 sources embedded</span></div>
+          <div class="pipeline"><div class="section-label"><h3>Evidence pipeline</h3><span id="pipeline-state">Waiting for media</span></div><ol class="stages" aria-label="Six-stage evidence presentation"><li class="stage"><span class="stage-number">01</span>Camera</li><li class="stage"><span class="stage-number">02</span>Vehicle detect</li><li class="stage"><span class="stage-number">03</span>Plate detect</li><li class="stage"><span class="stage-number">04</span>OCR</li><li class="stage"><span class="stage-number">05</span>DB lookup</li><li class="stage"><span class="stage-number">06</span>Verdict</li></ol><p class="pipeline-note">Vehicle detect is an illustrative plate-track proxy: fast-alpr detects plates, not whole vehicles. Stages replay precomputed evidence; this browser performs no detection or OCR.</p></div>
+          <div class="evidence"><div><p class="eyebrow">Actual plate crop</p><div class="crop-frame"><canvas id="crop-canvas" width="1" height="1" role="img" aria-label="Actual decoded plate crop" hidden></canvas><span id="crop-empty">No decoded evidence yet</span></div><p id="crop-caption" class="small-note">Only pixels from the supplied video.</p></div><div><p class="eyebrow" id="reading-heading">Precomputed plate evidence</p><p id="plate-reading" class="plate-reading">—</p><p id="evidence-origin" class="evidence-label">No plate reading available</p><p id="raw-ocr" class="small-note">Raw OCR: unavailable</p><p id="confidence-note" class="small-note">Detector / OCR confidence: unavailable</p><p id="evidence-verdict" class="small-note">Verdict pending actual evidence.</p></div></div>
+        </section>
+        <section class="card" aria-labelledby="log-title"><div class="card-heading"><div><h2 id="log-title">Detection log</h2><p>Camera checks only · Newest first</p></div><span class="tag" id="log-count">0 / 12 entries</span></div><div id="log-empty" class="log-empty"><h3>No camera checks yet</h3><p>Actual plate tracks will appear here after media is embedded.</p></div><div class="table-wrap" id="log-wrap" tabindex="0" role="region" aria-label="Camera detection log; scroll horizontally for all columns" hidden><table><caption class="sr-only">Latest twelve camera verdicts with evidence origin and sample database status</caption><thead><tr><th scope="col">Time</th><th scope="col">Plate</th><th scope="col">Vehicle</th><th scope="col">Token tax</th><th scope="col">Registration</th><th scope="col">Dues</th></tr></thead><tbody id="log-body"></tbody></table></div><p class="card-foot">Replay-safe counting · Session identities persist beyond these 12 rows and across source switches.</p></section>
+      </div>
+      <aside class="column" aria-label="Alerts and manual verification">
+        <section class="card" aria-labelledby="alerts-title"><div class="card-heading"><div><h2 id="alerts-title">Authorized-personnel alerts</h2><p>Local demonstration panel</p></div><span class="tag" id="alert-count">0 flags</span></div><p class="alert-intro">Demonstration only — this panel is not access control. Nothing is sent to authorities or any external service.</p><div class="alert-empty" id="alert-empty"><svg width="35" height="35" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.25" aria-hidden="true"><path d="M16 3 5 7v8c0 7 11 13 11 13s11-6 11-13V7L16 3Z"/><path d="M11 16h10"/></svg><h3>No camera alerts to review</h3><p>Waiting for real media. An empty panel does not certify that any vehicle is compliant.</p></div><ol class="alert-list" id="alert-list" aria-label="Flagged camera identities" tabindex="0" hidden></ol><p class="card-foot">Every flag includes its reasons and known or unknown dues.</p></section>
+        <section class="card" aria-labelledby="manual-title"><div class="card-heading"><div><h2 id="manual-title">Manual verification</h2><p>Check the fictional sample register</p></div><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></svg></div><div class="manual-body"><form id="manual-form" novalidate><label for="plate-input">Vehicle registration number</label><div class="input-row"><input id="plate-input" name="plate" type="text" maxlength="64" placeholder="e.g. LEA-19-4521" autocomplete="off" spellcheck="false" aria-describedby="manual-hint manual-error"><button class="button primary" type="submit">Verify</button></div><p id="manual-hint" class="manual-notice">Typed input — not OCR. Manual checks do not change camera statistics, alerts, or the log.</p><p id="manual-error" class="manual-error" hidden></p></form><div id="manual-result" class="manual-result" role="status" aria-live="polite" aria-atomic="true" hidden></div><details class="examples"><summary>Try one of 8 fictional sample records</summary><div id="example-list" class="example-list"></div></details></div></section>
+        <section class="disclosure" aria-labelledby="demo-title"><p class="eyebrow" id="demo-title">Transparent by design</p><p>Real footage, when supplied. Fictional vehicle records. No stock video, simulated detections, or live government database.</p><p>Any assigned value is labeled <strong>Assigned demo plate — not OCR</strong>. Unreadable evidence requires review; unknown dues are never added to totals.</p></section>
+      </aside>
+    </div>
+    <details class="help" id="setup-help"><summary id="setup-summary">Offline setup &amp; evidence notes</summary><div class="help-content">
+      <h3>1. Supply the actual clips</h3><p id="upload-note">The selected upload option is “Upload clips now,” but no user clips are present yet. Supply closeup.mp4 and traffic.mp4 yourself. No replacement footage is generated. This template remains usable for manual checks without media.</p><p>Run the following in Windows PowerShell from the project folder once the companion prepare_videos.py tool and clips are available. The browser does not upload or analyze video; extraction and embedding happen locally in the tool.</p>
+      <h3>2. Isolate Python 3.12 and inspect the tool</h3><pre><code>py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install "fast-alpr[onnx]==0.4.0"
+.\.venv\Scripts\python.exe prepare_videos.py --help
+.\.venv\Scripts\python.exe prepare_videos.py extract --help
+.\.venv\Scripts\python.exe prepare_videos.py embed --help</code></pre><p>Do not change the host OpenCV installation. Initial package installation and the first model load require downloads. After preparation, the generated HTML plays locally with zero browser network requests; there is no CDN or browser inference.</p>
+      <h3>3. Extract actual plate tracks</h3><pre><code>.\.venv\Scripts\python.exe prepare_videos.py extract --video closeup.mp4 --source-id closeup --output closeup.json
+.\.venv\Scripts\python.exe prepare_videos.py extract --video traffic.mp4 --source-id traffic --output traffic.json</code></pre><p>Use upright constant-frame-rate clips, preferably browser-compatible H.264 MP4. Variable-frame-rate input must be normalized to a new file first; then extract and embed that same file. If timestamps cannot be verified, --assume-cfr explicitly accepts the assumption and records it. Do not use it to disguise known variable timing.</p>
+      <h3>4. Optional, explicitly assigned demonstration plates</h3><p>Review actual track IDs and raw OCR in the extracted JSON. To assign fictional sample records to unreadable tracks, create a separate assignments.json mapping IDs to strings, for example:</p><pre><code>{"3": "LEA-19-4521", "8": "LEE-17-6240"}</code></pre><p>These strings are assigned demo plates — not OCR. Use a separate mapping for each source if needed. Rerun extraction with the mapping and either a new output path or explicit --force to replace the previous extraction:</p><pre><code>.\.venv\Scripts\python.exe prepare_videos.py extract --video closeup.mp4 --source-id closeup --output closeup.json --demo-assignments assignments.json --force</code></pre><p>Raw OCR and its confidence are retained separately. Centroid tracking can split or merge identities at crossings or occlusions; reviewed canonical vehicleId values in track metadata can correct identity grouping. The interface never infers identity from a plate string.</p>
+      <h3>5. Embed both videos, then open the output</h3><p>Call --help before embedding. Both real clips and their matching extraction outputs are required. The tool validates SHA-256 hashes and the shared schema. Never modify or re-encode a clip between extraction and embedding.</p><pre><code>.\.venv\Scripts\python.exe prepare_videos.py embed --help
+.\.venv\Scripts\python.exe prepare_videos.py embed --template index.html --closeup-video closeup.mp4 --closeup-data closeup.json --traffic-video traffic.mp4 --traffic-data traffic.json --output TaxTrackAI.html
+Start-Process .\TaxTrackAI.html</code></pre><p>Existing output files require explicit --force; input media must never be overwritten. In PowerShell, use semicolons to separate commands if putting them on one line. Base64 increases media size by roughly one third; favor short clips without sacrificing plate detail.</p>
+      <h3>How this demonstration works</h3><ul><li>One muted, looping decoder supplies actual pixels to the camera canvas. REC is a replay overlay, not a live recording or transmission. The clock is elapsed clip time.</li><li>The six stages present precomputed metadata over approximately 1.5 seconds of media time, shortened near the clip end. Vehicle detect is an illustrative plate-track proxy, not a fabricated whole-vehicle detector.</li><li>Typing presents precomputed OCR text or explicitly assigned demo text; it is not live browser OCR. Reduced-motion mode shows the available text without character animation.</li><li>A crop is captured only from matching decoded plate coordinates. If the exact evidence frame is skipped, the crop is labeled as a sampled frame, or shown as unavailable; no text or image is manufactured.</li><li>Paid token tax plus valid registration is compliant. Unpaid, expired, unknown, or unreadable evidence is flagged with every reason. Unknown dues are excluded from totals.</li><li>One verdict is counted per source plus canonical vehicle identity. Replays and source switches preserve this session-wide set even after older log rows disappear. Manual input is separate. Reset clears the session and restarts the selected source.</li><li>Pause freezes video and stage progress. If the browser blocks autoplay or cannot decode a clip, use Resume or the recovery action. Switching sources cancels pending work without clearing camera totals.</li><li>Session results are held only in memory. Only the theme preference is stored when local storage is available; direct-file restrictions are safely ignored.</li></ul>
+      <h3>Verification still required</h3><p>No execution is implied by this template. Verify should check direct-file opening, no external requests, manual status combinations, unknown and empty input, keyboard use, both themes, reduced motion, and 320/768/desktop widths. Once real clips arrive, verify actual crops, stage timing, dropped-frame boundaries, three replay loops, source switches, autoplay recovery, pause, reset cancellation, and deduplication beyond 12 rows. Media quality and clip-specific identity continuity cannot be certified without the supplied footage.</p>
+    </div></details>
+  </main>
+  <footer>Sample vehicle records and plate readings shown for demonstration. Not an official government system.</footer>
+  <p id="announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+  <video id="decoder" muted autoplay loop playsinline preload="auto" aria-hidden="true" tabindex="-1" disablepictureinpicture></video>
+  <!-- TAXTRACK_DATA_BEGIN -->
+  <script id="taxtrack-data" type="application/json">{"schemaVersion":1,"sources":[]}</script>
+  <!-- TAXTRACK_DATA_END -->
+  <script>
+    (() => {
+      'use strict';
+      const nodes = new Map();
+      const $ = id => { if (!nodes.has(id)) nodes.set(id, document.getElementById(id)); return nodes.get(id); };
+      const text = (id, value) => { const node = $(id); const next = String(value); if (node.textContent !== next) node.textContent = next; };
+      const element = (tag, className, value) => { const node = document.createElement(tag); if (className) node.className = className; if (value !== undefined) node.textContent = String(value); return node; };
+      const announce = message => text('announcer', message);
+      const money = value => new Intl.NumberFormat('en-PK', { maximumFractionDigits: 0 }).format(value);
+      const clock = seconds => { const value = Math.max(0, Math.floor(seconds)); return [Math.floor(value / 3600), Math.floor(value / 60) % 60, value % 60].map(n => String(n).padStart(2, '0')).join(':'); };
+      // Normalize separators and case only. Never substitute uncertain characters such as O/0 or I/1.
+      const normalizePlate = plate => String(plate == null ? '' : plate).toUpperCase().replace(/[\s._/\\-]+/g, '');
+      const mockRecords = Object.freeze([
+        { plate: 'LEA-19-4521', vehicle: 'Toyota Corolla', tokenTax: 'Paid', registration: 'Valid', duesPkr: 0 },
+        { plate: 'LEB-20-7814', vehicle: 'Honda City', tokenTax: 'Unpaid', registration: 'Valid', duesPkr: 12500 },
+        { plate: 'LEC-18-3096', vehicle: 'Suzuki Alto', tokenTax: 'Paid', registration: 'Expired', duesPkr: 3000 },
+        { plate: 'LEE-17-6240', vehicle: 'Toyota Hiace', tokenTax: 'Unpaid', registration: 'Expired', duesPkr: 18500 },
+        { plate: 'LWF-22-1188', vehicle: 'Honda Civic', tokenTax: 'Paid', registration: 'Valid', duesPkr: 0 },
+        { plate: 'LXD-21-9072', vehicle: 'Suzuki Cultus', tokenTax: 'Unpaid', registration: 'Valid', duesPkr: 8600 },
+        { plate: 'RIB-16-5530', vehicle: 'Suzuki Bolan', tokenTax: 'Paid', registration: 'Expired', duesPkr: 2500 },
+        { plate: 'MNA-23-2047', vehicle: 'Kia Sportage', tokenTax: 'Unpaid', registration: 'Expired', duesPkr: 22000 }
+      ]);
+      const database = new Map(mockRecords.map(record => [normalizePlate(record.plate), record]));
+      const placeholders = { closeup: { name: 'Real plate video', cameraId: 'CAM-01' }, traffic: { name: 'Traffic light view', cameraId: 'CAM-02' } };
+      const sources = new Map(), sourceErrors = new Map(), seenIdentities = new Set();
+      const decoder = $('decoder'), camera = $('camera-canvas'), crop = $('crop-canvas');
+      const cameraContext = camera.getContext('2d'), cropContext = crop.getContext('2d');
+      const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+      const stageNodes = Array.from(document.querySelectorAll('.stage'));
+      const state = { selected: 'closeup', source: null, sourceEpoch: 0, runEpoch: 0, callback: null, ready: false, hasFrame: false, userPaused: false, mode: 'waiting', lastTime: -1, loop: 1, boundary: 0, events: [], tracks: [], trackMap: new Map(), detail: null, cropInfo: null, compliant: 0, flagged: 0, dues: 0 };
+      let envelopeError = '';
+
+      function verdict(plate, plateSource) {
+        if (plateSource === 'unreadable' || !normalizePlate(plate)) return { plate: 'Unreadable', vehicle: 'Review required', tokenTax: 'Not checked', registration: 'Not checked', duesPkr: null, compliant: false, review: true, reasons: ['Plate evidence is unreadable; manual review is required.', 'Token tax, registration and dues cannot be established.'] };
+        const record = database.get(normalizePlate(plate));
+        if (!record) return { plate: String(plate), vehicle: 'Not found', tokenTax: 'Not found', registration: 'Not found', duesPkr: null, compliant: false, review: true, reasons: ['Plate not found in the fictional sample register.', 'Token tax and registration are unknown; manual review is required.', 'Dues are unknown and excluded from the total.'] };
+        const reasons = [];
+        if (record.tokenTax !== 'Paid') reasons.push('Token tax is unpaid.');
+        if (record.registration !== 'Valid') reasons.push('Vehicle registration has expired.');
+        return { ...record, compliant: reasons.length === 0, review: false, reasons };
+      }
+      const evidenceOrigin = track => track.plateSource === 'demo_assigned' ? 'Assigned demo plate — not OCR' : track.plateSource === 'ocr' ? 'Precomputed OCR — not live browser OCR' : 'Unreadable evidence — review required';
+      const duesText = result => result.duesPkr === null ? 'Unknown dues' : 'PKR ' + money(result.duesPkr);
+      const verdictLabel = result => result.compliant ? 'Compliant' : result.review ? 'Review required' : 'Flagged';
+      const canonicalKey = (source, track, trackId) => JSON.stringify([source.id, String(track.vehicleId == null ? trackId : track.vehicleId)]);
+      function confidence(value) {
+        if (value === null || value === undefined) return 'unavailable';
+        if (Array.isArray(value)) return value.length ? value.map(confidence).join(' / ') + ' (per character)' : 'unavailable';
+        return value >= 0 && value <= 1 ? (value * 100).toFixed(1) + '%' : String(value);
+      }
+      function statusBadge(value, good) { return element('span', 'badge ' + (good ? 'good' : 'flag'), value); }
+
+      function validateSource(source) {
+        const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+        const require = (condition, message) => { if (!condition) throw new Error(message); };
+        require(object(source) && Object.hasOwn(placeholders, source.id), 'Unrecognized source ID.');
+        require(source.cameraId === placeholders[source.id].cameraId && typeof source.name === 'string', 'Invalid source name or camera ID.');
+        require(typeof source.mime === 'string' && /^video\/[a-z0-9.+-]+$/i.test(source.mime), 'Invalid video MIME type.');
+        require(source.videoBase64 === null || (typeof source.videoBase64 === 'string' && source.videoBase64.length > 0), 'Invalid embedded video value.');
+        require(typeof source.videoSha256 === 'string' && /^[a-f0-9]{64}$/i.test(source.videoSha256), 'Missing or invalid media hash.');
+        require(Number.isInteger(source.width) && source.width > 0 && Number.isInteger(source.height) && source.height > 0, 'Invalid decoded dimensions.');
+        require(Number.isFinite(source.fps) && source.fps > 0 && Number.isInteger(source.frameCount) && source.frameCount > 0, 'Invalid frame rate or frame count.');
+        require(Number.isFinite(source.durationSeconds) && source.durationSeconds > 0, 'Invalid video duration.');
+        require(Math.abs(source.durationSeconds - source.frameCount / source.fps) <= Math.max(.1, 2 / source.fps), 'Frame count and duration disagree.');
+        require(Array.isArray(source.frames) && source.frames.length === source.frameCount && object(source.tracks) && object(source.provenance), 'Incomplete frame, track or provenance metadata.');
+        const references = new Map();
+        for (const [id, track] of Object.entries(source.tracks)) {
+          require(object(track), 'Invalid track record.');
+          require(['ocr', 'demo_assigned', 'unreadable'].includes(track.plateSource), 'Invalid plate evidence origin.');
+          require(track.plate === null || typeof track.plate === 'string', 'Invalid plate value.');
+          require(track.rawOcr === null || typeof track.rawOcr === 'string', 'Invalid raw OCR value.');
+          require(track.ocrConfidence === null || Number.isFinite(track.ocrConfidence) || (Array.isArray(track.ocrConfidence) && track.ocrConfidence.every(Number.isFinite)), 'Invalid OCR confidence.');
+          require([track.firstFrame, track.lastFrame, track.evidenceFrame].every(Number.isInteger) && track.firstFrame >= 0 && track.lastFrame < source.frameCount && track.firstFrame <= track.evidenceFrame && track.evidenceFrame <= track.lastFrame, 'Invalid track frame bounds.');
+          require(track.vehicleId == null || typeof track.vehicleId === 'string' || Number.isFinite(track.vehicleId), 'Invalid canonical vehicle identity.');
+          references.set(id, { first: null, last: null, evidence: false });
+        }
+        source.frames.forEach((detections, frameIndex) => {
+          require(Array.isArray(detections), 'Every decoded frame requires an array, including empty frames.');
+          const frameIds = new Set();
+          for (const detection of detections) {
+            require(Array.isArray(detection) && detection.length === 6, 'Invalid detection tuple.');
+            const [trackId, x1, y1, x2, y2, detectorConfidence] = detection;
+            require((typeof trackId === 'string' || Number.isFinite(trackId)) && references.has(String(trackId)), 'Detection references a missing track.');
+            require([x1, y1, x2, y2, detectorConfidence].every(Number.isFinite) && x1 >= 0 && y1 >= 0 && x2 > x1 && y2 > y1 && x2 <= source.width && y2 <= source.height, 'Invalid source-pixel plate bounds or detector confidence.');
+            const id = String(trackId), track = source.tracks[id], reference = references.get(id);
+            require(!frameIds.has(id) && frameIndex >= track.firstFrame && frameIndex <= track.lastFrame, 'Inconsistent track membership.');
+            frameIds.add(id); if (reference.first === null) reference.first = frameIndex; reference.last = frameIndex;
+            if (frameIndex === track.evidenceFrame) reference.evidence = true;
+          }
+        });
+        for (const [id, reference] of references) require(reference.first === source.tracks[id].firstFrame && reference.last === source.tracks[id].lastFrame && reference.evidence, 'Track evidence does not match its actual frame detections.');
+        return source;
+      }
+      function readEmbeddedData() {
+        try {
+          const envelope = JSON.parse($('taxtrack-data').textContent);
+          if (!envelope || envelope.schemaVersion !== 1 || !Array.isArray(envelope.sources) || envelope.sources.length > 2) throw new Error('Unsupported embedded-data envelope.');
+          const ids = new Set();
+          for (const source of envelope.sources) {
+            if (!source || !Object.hasOwn(placeholders, source.id)) throw new Error('Unknown embedded source.');
+            if (ids.has(source.id)) { sources.delete(source.id); sourceErrors.set(source.id, 'Duplicate embedded source ID.'); continue; }
+            ids.add(source.id);
+            try { sources.set(source.id, validateSource(source)); } catch (error) { sourceErrors.set(source.id, error.message); }
+          }
+        } catch (error) { envelopeError = error.message; sources.clear(); }
+      }
+      function updateStats() {
+        text('stat-scanned', money(state.compliant + state.flagged)); text('stat-compliant', money(state.compliant));
+        text('stat-flagged', money(state.flagged)); text('stat-dues', money(state.dues));
+        $('flag-stat').classList.toggle('has-flags', state.flagged > 0); text('alert-count', money(state.flagged) + (state.flagged === 1 ? ' flag' : ' flags'));
+      }
+      function appendLog(item, at) {
+        const { track, result } = item, row = element('tr'), time = element('td', 'mono', clock(at));
+        time.append(element('small', '', state.source.cameraId + ' · clip time')); row.append(time);
+        const plateCell = element('td', 'mono', track.plateSource === 'unreadable' || !normalizePlate(track.plate) ? 'Unreadable' : track.plate);
+        plateCell.append(element('small', '', evidenceOrigin(track))); row.append(plateCell, element('td', '', result.vehicle));
+        const tax = element('td'), registration = element('td'), dues = element('td');
+        tax.append(statusBadge(result.tokenTax, result.tokenTax === 'Paid')); registration.append(statusBadge(result.registration, result.registration === 'Valid'));
+        dues.append(statusBadge(duesText(result), result.duesPkr === 0)); row.append(tax, registration, dues); $('log-body').prepend(row);
+        while ($('log-body').children.length > 12) $('log-body').lastElementChild.remove();
+        $('log-empty').hidden = true; $('log-wrap').hidden = false; text('log-count', $('log-body').children.length + ' / 12 entries');
+      }
+      function appendAlert(item, at) {
+        const { track, result } = item, alert = element('li', 'alert-item'), title = element('div', 'alert-title');
+        title.append(element('span', 'mono', track.plateSource === 'unreadable' || !normalizePlate(track.plate) ? 'Unreadable plate' : track.plate), element('span', 'badge flag', verdictLabel(result)));
+        alert.append(title, element('p', '', evidenceOrigin(track)), element('p', '', state.source.cameraId + ' · ' + clock(at) + ' clip time · ' + result.vehicle));
+        const reasons = element('ul'); result.reasons.forEach(reason => reasons.append(element('li', '', reason)));
+        alert.append(reasons, element('div', 'alert-dues', duesText(result))); $('alert-list').prepend(alert);
+        $('alert-list').hidden = false; $('alert-empty').hidden = true;
+      }
+      function commit(item, at) {
+        const key = canonicalKey(state.source, item.track, item.id);
+        if (seenIdentities.has(key)) return;
+        seenIdentities.add(key);
+        if (item.result.compliant) state.compliant++; else state.flagged++;
+        if (Number.isFinite(item.result.duesPkr)) state.dues += item.result.duesPkr;
+        appendLog(item, at); if (!item.result.compliant) appendAlert(item, at); updateStats();
+        announce((state.compliant + state.flagged) + ' unique camera identities checked; ' + state.flagged + ' flagged.');
+      }
+      function clearEvidence() {
+        state.detail = null; state.cropInfo = null; $('crop-canvas').hidden = true; $('crop-empty').hidden = false;
+        text('crop-empty', 'No decoded evidence yet'); text('crop-caption', 'Only pixels from the supplied video.');
+        text('reading-heading', 'Precomputed plate evidence'); text('plate-reading', '—'); text('evidence-origin', 'No plate reading available');
+        $('evidence-origin').classList.remove('assigned'); text('raw-ocr', 'Raw OCR: unavailable'); text('confidence-note', 'Detector / OCR confidence: unavailable');
+        text('evidence-verdict', 'Verdict pending actual evidence.'); $('evidence-verdict').className = 'small-note';
+        stageNodes.forEach(node => { node.className = 'stage'; node.removeAttribute('aria-current'); });
+      }
+      function compileTimeline() {
+        state.tracks = []; state.trackMap = new Map(); state.events = [];
+        if (!state.source) return;
+        // Final-frame time, rather than duration itself, keeps the last verdict reachable before native looping.
+        const terminal = Math.max(0, (state.source.frameCount - 1) / state.source.fps);
+        for (const [id, track] of Object.entries(state.source.tracks)) {
+          const start = track.firstFrame / state.source.fps, span = Math.min(1.5, Math.max(0, terminal - start));
+          const item = { id, track, start, span, stage: -1, result: verdict(track.plate, track.plateSource) };
+          state.tracks.push(item); state.trackMap.set(id, item);
+          for (let stage = 0; stage < 6; stage++) state.events.push({ at: start + span * stage / 5, stage, item });
+        }
+        state.tracks.sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
+        state.events.sort((a, b) => a.at - b.at || a.stage - b.stage || a.item.id.localeCompare(b.item.id));
+        state.boundary = 0; state.lastTime = -1; state.loop = 1;
+      }
+      function advanceTo(time) {
+        // Consume every crossed boundary, not just events belonging to this callback's frame.
+        while (state.boundary < state.events.length && state.events[state.boundary].at <= time + 1e-7) {
+          const event = state.events[state.boundary++]; event.item.stage = Math.max(event.item.stage, event.stage);
+          if (event.stage === 5) commit(event.item, event.at);
+        }
+      }
+      function advanceTimeline(time) {
+        if (state.lastTime >= 0 && time + .001 < state.lastTime) {
+          advanceTo(state.source.durationSeconds); state.loop++; state.boundary = 0;
+          state.tracks.forEach(item => { item.stage = -1; }); clearEvidence();
+        }
+        advanceTo(time); state.lastTime = time;
+      }
+      function selectDetail() {
+        if (state.detail && state.detail.stage >= 0 && state.detail.stage < 5) return;
+        const active = state.tracks.find(item => item.stage >= 0 && item.stage < 5);
+        const started = state.tracks.filter(item => item.stage >= 0);
+        const next = active || started[started.length - 1] || null;
+        if (next !== state.detail) { clearEvidence(); state.detail = next; }
+      }
+      function resizeCanvas(canvas, width, height) { if (canvas.width !== width) canvas.width = width; if (canvas.height !== height) canvas.height = height; }
+      function captureCrop(detections, frameIndex) {
+        const item = state.detail;
+        if (!item || (state.cropInfo && state.cropInfo.exact)) return;
+        const detection = detections.find(entry => String(entry[0]) === item.id);
+        if (!detection) return;
+        const [, x1, y1, x2, y2, detectorConfidence] = detection;
+        resizeCanvas(crop, Math.max(1, Math.round(x2 - x1)), Math.max(1, Math.round(y2 - y1)));
+        cropContext.drawImage(decoder, x1, y1, x2 - x1, y2 - y1, 0, 0, crop.width, crop.height);
+        state.cropInfo = { frameIndex, detectorConfidence, exact: frameIndex === item.track.evidenceFrame };
+        crop.setAttribute('aria-label', 'Actual decoded plate crop, frame ' + frameIndex + ', track ' + item.id);
+      }
+      function drawBoxes(detections) {
+        const palette = getComputedStyle(document.documentElement), scale = Math.max(1, camera.width / 640);
+        cameraContext.lineWidth = 2 * scale; cameraContext.font = Math.round(11 * scale) + 'px Consolas, monospace';
+        detections.forEach(detection => {
+          const [id, x1, y1, x2, y2] = detection, item = state.trackMap.get(String(id));
+          const complete = item && item.stage === 5, color = palette.getPropertyValue(complete ? (item.result.compliant ? '--box-green' : '--box-red') : '--yellow').trim();
+          cameraContext.strokeStyle = color; cameraContext.strokeRect(x1, y1, x2 - x1, y2 - y1);
+          let label = 'Plate track ' + id + ' · processing';
+          if (complete) label = (item.track.plateSource === 'unreadable' || !normalizePlate(item.track.plate) ? 'Unreadable' : item.track.plate) + ' · ' + verdictLabel(item.result);
+          if (complete && item.track.plateSource === 'demo_assigned') label += ' · Assigned demo plate — not OCR';
+          const height = 20 * scale, width = Math.min(camera.width, cameraContext.measureText(label).width + 12 * scale);
+          const left = Math.max(0, Math.min(x1, camera.width - width)), top = Math.max(0, y1 >= height ? y1 - height : Math.min(y2, camera.height - height));
+          cameraContext.fillStyle = color; cameraContext.fillRect(left, top, width, height); cameraContext.fillStyle = '#102219';
+          cameraContext.fillText(label, left + 6 * scale, top + 14 * scale, Math.max(1, width - 12 * scale));
+        });
+      }
+      function renderEvidence(time) {
+        const item = state.detail;
+        if (!item) { text('pipeline-state', state.hasFrame ? 'No plate tracks at this time' : 'Waiting for media'); return; }
+        const { track, stage, result } = item, assigned = track.plateSource === 'demo_assigned';
+        stageNodes.forEach((node, index) => {
+          node.className = 'stage' + (index < stage ? ' is-done' : index === stage ? (stage === 5 ? (result.compliant ? ' is-done' : ' is-flagged') : ' is-current') : '');
+          if (index === stage) node.setAttribute('aria-current', 'step'); else node.removeAttribute('aria-current');
+        });
+        text('pipeline-state', 'Track ' + item.id + ' · ' + (stage + 1) + ' / 6');
+        text('reading-heading', assigned ? 'Assigned demo plate — not OCR' : 'Precomputed plate evidence');
+        text('evidence-origin', evidenceOrigin(track)); $('evidence-origin').classList.toggle('assigned', assigned);
+        const readable = track.plateSource !== 'unreadable' && normalizePlate(track.plate);
+        let reading = 'Waiting for text stage';
+        if (stage >= 3) {
+          if (!readable) reading = 'Unreadable';
+          else {
+            const characters = Array.from(track.plate), typingStart = item.start + item.span * 3 / 5, typingDuration = item.span / 5;
+            const fraction = motionPreference.matches || stage >= 4 || typingDuration === 0 ? 1 : Math.max(0, Math.min(1, (time - typingStart) / typingDuration));
+            reading = characters.slice(0, Math.floor(characters.length * fraction)).join('') || '…';
+          }
+        }
+        text('plate-reading', reading);
+        text('raw-ocr', 'Raw OCR (retained): ' + (track.rawOcr === null || track.rawOcr === '' ? 'unavailable' : track.rawOcr));
+        text('confidence-note', 'Plate detector: ' + confidence(state.cropInfo ? state.cropInfo.detectorConfidence : null) + ' · Raw OCR: ' + confidence(track.ocrConfidence));
+        const showCrop = stage >= 2 && state.cropInfo !== null; crop.hidden = !showCrop; $('crop-empty').hidden = showCrop;
+        if (showCrop) text('crop-caption', (state.cropInfo.exact ? 'Exact evidence frame ' : 'Actual sampled frame ') + state.cropInfo.frameIndex + (state.cropInfo.exact ? '' : ' · Extracted evidence frame ' + track.evidenceFrame + ' not captured here'));
+        else { text('crop-empty', stage >= 2 ? 'No matching frame captured' : 'Awaiting plate stage'); text('crop-caption', 'No crop is manufactured. Expected evidence frame: ' + track.evidenceFrame + '.'); }
+        text('evidence-verdict', stage >= 5 ? verdictLabel(result) + ' · ' + duesText(result) + (result.reasons.length ? ' · ' + result.reasons.join(' ') : ' · Token tax paid; registration valid.') : stage === 4 ? 'Checking the fictional sample register…' : 'Verdict pending stage completion.');
+        $('evidence-verdict').className = stage >= 5 ? 'small-note badge ' + (result.compliant ? 'good' : 'flag') : 'small-note';
+      }
+      function renderFrame(advance, presentationTime) {
+        if (!state.ready || !state.source || decoder.readyState < 2 || decoder.seeking) return;
+        const time = Math.max(0, Math.min(decoder.currentTime, state.source.durationSeconds));
+        // Media time drives scheduling. A callback's presented timestamp, if supplied, aligns boxes/crops to the actual decoded pixels.
+        const timelineFrame = Math.min(state.source.frameCount - 1, Math.max(0, Math.floor(decoder.currentTime * state.source.fps)));
+        const frameIndex = Number.isFinite(presentationTime) ? Math.min(state.source.frameCount - 1, Math.max(0, Math.floor(presentationTime * state.source.fps + 1e-7))) : timelineFrame;
+        resizeCanvas(camera, decoder.videoWidth, decoder.videoHeight); cameraContext.drawImage(decoder, 0, 0, camera.width, camera.height);
+        state.hasFrame = true; const detections = state.source.frames[frameIndex];
+        if (advance) advanceTimeline(time);
+        selectDetail(); captureCrop(detections, frameIndex); drawBoxes(detections); renderEvidence(time);
+        text('camera-clock', clock(time)); text('frame-label', 'FRAME ' + frameIndex + ' / ' + (state.source.frameCount - 1) + ' · LOOP ' + state.loop);
+        camera.setAttribute('aria-label', state.source.name + ', ' + state.source.cameraId + ', prerecorded frame ' + frameIndex + ', ' + detections.length + ' precomputed plate tracks. Box colors: yellow processing, green compliant, red flagged.');
+        if (['playing', 'paused', 'buffering'].includes(state.mode)) $('media-overlay').hidden = true;
+      }
+      function cancelFrameLoop() {
+        state.runEpoch++;
+        if (state.callback) {
+          if (state.callback.kind === 'video') decoder.cancelVideoFrameCallback(state.callback.id); else cancelAnimationFrame(state.callback.id);
+          state.callback = null;
+        }
+      }
+      function scheduleFrame(sourceEpoch, runEpoch) {
+        if (state.callback || sourceEpoch !== state.sourceEpoch || runEpoch !== state.runEpoch || state.userPaused || !state.ready) return;
+        const ticket = { kind: typeof decoder.requestVideoFrameCallback === 'function' ? 'video' : 'raf', id: null };
+        const callback = (now, metadata) => {
+          if (sourceEpoch !== state.sourceEpoch || runEpoch !== state.runEpoch || state.userPaused) return;
+          if (state.callback === ticket) state.callback = null;
+          try { renderFrame(true, metadata && metadata.mediaTime); } catch (error) { mediaFailure('The decoded frame could not be rendered. Re-embed a browser-compatible clip.'); return; }
+          scheduleFrame(sourceEpoch, runEpoch);
+        };
+        state.callback = ticket;
+        ticket.id = ticket.kind === 'video' ? decoder.requestVideoFrameCallback(callback) : requestAnimationFrame(callback);
+      }
+      function setMode(mode, message) {
+        const changed = state.mode !== mode; state.mode = mode;
+        const labels = { waiting: 'Waiting for uploaded clips', loading: 'Opening embedded video', playing: 'Playing actual embedded video', buffering: 'Waiting for a decoded frame', paused: 'Playback paused', blocked: 'Playback needs permission', error: 'Media unavailable' };
+        text('media-status-text', message || labels[mode]); $('media-status').dataset.state = mode;
+        const active = !state.userPaused && ['playing', 'loading', 'buffering'].includes(mode);
+        $('pause-button').disabled = !state.source || !state.source.videoBase64 || !cameraContext || !cropContext;
+        text('pause-label', active || mode === 'waiting' ? 'Pause' : 'Resume'); text('pause-glyph', active || mode === 'waiting' ? 'Ⅱ' : '▷');
+        $('pause-button').setAttribute('aria-label', active ? 'Pause video and evidence stages' : 'Resume video and evidence stages');
+        text('record-indicator', mode === 'playing' ? 'REC' : mode === 'paused' || mode === 'blocked' ? 'PAUSED' : mode === 'buffering' ? 'BUFFER' : mode === 'loading' ? 'LOADING' : mode === 'error' ? 'UNAVAILABLE' : 'NO MEDIA');
+        $('record-indicator').classList.toggle('is-recording', mode === 'playing');
+        $('media-overlay').hidden = (mode === 'playing' || mode === 'paused' || mode === 'buffering') && state.hasFrame;
+        $('media-action').hidden = mode === 'loading' || mode === 'buffering' || mode === 'playing';
+        const headings = { waiting: 'Waiting for your footage', loading: 'Opening local video', paused: 'Playback is paused', buffering: 'Waiting for local video', blocked: 'Ready when you are', error: 'This source needs attention' };
+        text('media-title', headings[mode] || 'Actual video playback');
+        text('media-message', message || (mode === 'waiting' ? 'No actual video is embedded for this source. No camera activity is simulated; existing session results are preserved.' : mode === 'loading' || mode === 'buffering' ? 'Decoding embedded media on this device. No network connection is used.' : mode === 'paused' || mode === 'blocked' ? 'Select Resume to play the local clip and continue its evidence stages.' : ''));
+        text('media-action', mode === 'blocked' || mode === 'paused' ? 'Resume playback' : mode === 'error' && state.source && state.source.videoBase64 ? 'Retry media' : 'Prepare & embed clips');
+        if (changed || message) announce(message || labels[mode]);
+      }
+      function mediaFailure(message) { state.userPaused = true; state.ready = false; cancelFrameLoop(); decoder.pause(); setMode('error', message); }
+      function requestPlay() {
+        if (!state.ready || state.userPaused) return;
+        cancelFrameLoop(); const sourceEpoch = state.sourceEpoch, runEpoch = state.runEpoch;
+        setMode(state.hasFrame ? 'buffering' : 'loading');
+        const rejected = error => {
+          if (sourceEpoch !== state.sourceEpoch || runEpoch !== state.runEpoch) return;
+          state.userPaused = true; cancelFrameLoop(); decoder.pause();
+          setMode(error && error.name === 'NotSupportedError' ? 'error' : 'blocked', error && error.name === 'NotSupportedError' ? 'This browser cannot decode the embedded video. Use a supported MP4 or WebM clip, then extract and embed the same bytes again.' : 'Playback was not started. Select Resume to retry from a direct user action.');
+        };
+        try {
+          Promise.resolve(decoder.play()).then(() => {
+            if (sourceEpoch !== state.sourceEpoch || runEpoch !== state.runEpoch || state.userPaused) return;
+            setMode('playing'); scheduleFrame(sourceEpoch, runEpoch);
+          }, rejected);
+        } catch (error) { rejected(error); }
+      }
+      function loadSource(id) {
+        state.sourceEpoch++; cancelFrameLoop(); const epoch = state.sourceEpoch;
+        decoder.onloadedmetadata = decoder.onloadeddata = decoder.onerror = decoder.onplay = decoder.onplaying = decoder.onwaiting = null;
+        decoder.pause(); decoder.removeAttribute('src'); decoder.load();
+        state.selected = id; state.source = sources.get(id) || null; state.ready = false; state.hasFrame = false; state.lastTime = -1;
+        clearEvidence(); compileTimeline(); if (cameraContext) cameraContext.clearRect(0, 0, camera.width, camera.height);
+        const source = state.source, description = source || placeholders[id];
+        text('source-description', description.name + ' · ' + description.cameraId); text('camera-id', description.cameraId); text('camera-clock', '--:--:--'); text('frame-label', 'NO EMBEDDED FRAMES'); text('pipeline-state', 'Waiting for media');
+        camera.setAttribute('aria-label', 'No decoded video frame available for ' + description.name + '.');
+        document.querySelectorAll('[data-source]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.source === id)));
+        const available = Array.from(sources.values()).filter(item => item.videoBase64).length;
+        text('media-metadata', available + ' / 2 sources embedded');
+        text('upload-note', available ? available + ' of 2 video sources are embedded in this file. The instructions below describe how to prepare or replace them using your actual clips. No replacement footage is generated.' : 'The selected upload option is “Upload clips now,” but no user clips are embedded yet. Supply closeup.mp4 and traffic.mp4. No replacement footage is generated. Manual checks remain available.');
+        $('alert-empty').querySelector('p').textContent = available ? 'No flagged camera verdicts yet. An empty panel does not certify that any vehicle is compliant.' : 'Waiting for real media. An empty panel does not certify that any vehicle is compliant.';
+        if (envelopeError || sourceErrors.has(id)) { setMode('error', 'Embedded metadata was rejected: ' + (envelopeError || sourceErrors.get(id)) + ' Re-extract and embed matching media.'); return; }
+        if (!source || !source.videoBase64) { setMode('waiting'); return; }
+        if (!cameraContext || !cropContext) { setMode('error', 'Canvas rendering is unavailable in this browser. Manual verification remains available.'); return; }
+        setMode('loading');
+        decoder.onloadedmetadata = () => {
+          if (epoch !== state.sourceEpoch) return;
+          if (decoder.videoWidth !== source.width || decoder.videoHeight !== source.height || !Number.isFinite(decoder.duration) || Math.abs(decoder.duration - source.durationSeconds) > Math.max(.25, 2 / source.fps)) { mediaFailure('Decoded media dimensions or duration disagree with the extraction. Re-extract and embed the identical upright constant-frame-rate file.'); return; }
+          state.ready = true; text('media-metadata', source.width + ' × ' + source.height + ' · ' + source.fps.toFixed(2) + ' fps · ' + clock(source.durationSeconds));
+          if (state.userPaused) setMode('paused'); else requestPlay();
+        };
+        decoder.onloadeddata = () => { if (epoch === state.sourceEpoch && state.ready && state.userPaused) { try { renderFrame(false); } catch (error) { mediaFailure('The embedded video could not be rendered.'); } } };
+        decoder.onerror = () => { if (epoch === state.sourceEpoch) mediaFailure('The embedded video could not be opened. Check the codec and re-embed the exact extracted media; manual checks remain available.'); };
+        decoder.onplay = () => { if (epoch === state.sourceEpoch && (state.userPaused || !state.ready || state.mode === 'error')) decoder.pause(); };
+        decoder.onplaying = () => { if (epoch !== state.sourceEpoch) return; if (state.userPaused || !state.ready) decoder.pause(); else setMode('playing'); };
+        decoder.onwaiting = () => { if (epoch === state.sourceEpoch && state.ready && !state.userPaused) setMode('buffering'); };
+        decoder.muted = true; decoder.defaultMuted = true; decoder.loop = true; decoder.playsInline = true; decoder.autoplay = !state.userPaused;
+        decoder.src = 'data:' + source.mime + ';base64,' + source.videoBase64; decoder.load();
+      }
+      function pausePlayback(message) {
+        state.userPaused = true; decoder.autoplay = false; decoder.pause(); cancelFrameLoop();
+        try { renderFrame(true); } catch (error) { mediaFailure('The paused frame could not be rendered.'); return; }
+        setMode('paused', message);
+      }
+      function resumePlayback() { state.userPaused = false; if (!state.ready || state.mode === 'error') loadSource(state.selected); else requestPlay(); }
+      function resetSession() {
+        state.sourceEpoch++; cancelFrameLoop(); decoder.pause(); seenIdentities.clear(); state.compliant = 0; state.flagged = 0; state.dues = 0;
+        $('log-body').replaceChildren(); $('alert-list').replaceChildren(); $('log-empty').hidden = false; $('log-wrap').hidden = true; $('alert-empty').hidden = false; $('alert-list').hidden = true;
+        text('log-count', '0 / 12 entries'); updateStats(); $('manual-result').replaceChildren(); $('manual-result').hidden = true;
+        $('manual-error').hidden = true; $('plate-input').removeAttribute('aria-invalid'); $('plate-input').value = '';
+        state.userPaused = false; loadSource(state.selected); announce('Session reset. Camera totals and identity history cleared. ' + (state.source && state.source.videoBase64 ? 'Restarting the selected source.' : 'Waiting for actual embedded media.'));
+      }
+      function manualCheck() {
+        const input = $('plate-input'), value = input.value.trim();
+        if (!normalizePlate(value)) { input.setAttribute('aria-invalid', 'true'); text('manual-error', 'Enter a registration number before verifying.'); $('manual-error').hidden = false; $('manual-result').hidden = true; announce('Enter a registration number before verifying.'); input.focus(); return; }
+        input.removeAttribute('aria-invalid'); $('manual-error').hidden = true;
+        const result = verdict(value, 'manual'), output = $('manual-result'); output.className = 'manual-result' + (result.compliant ? '' : ' flagged'); output.replaceChildren();
+        const heading = element('h3', '', result.plate + ' · ' + verdictLabel(result));
+        output.append(heading, element('p', '', 'Typed input — not OCR. Fictional sample database result.'), element('p', '', 'Vehicle: ' + result.vehicle), element('p', '', 'Token tax: ' + result.tokenTax + ' · Registration: ' + result.registration));
+        if (result.reasons.length) { const reasons = element('ul'); result.reasons.forEach(reason => reasons.append(element('li', '', reason))); output.append(reasons); }
+        output.append(element('p', 'mono', duesText(result)), element('p', '', 'Manual result only. Camera statistics, alerts and log are unchanged.')); output.hidden = false;
+        announce('Manual check, typed input, not OCR: ' + result.plate + '. ' + verdictLabel(result) + '. ' + duesText(result) + '. ' + result.reasons.join(' '));
+      }
+      function applyTheme(theme) {
+        document.documentElement.dataset.theme = theme; const dark = theme === 'dark';
+        $('theme-toggle').setAttribute('aria-pressed', String(dark)); $('theme-toggle').setAttribute('aria-label', dark ? 'Use light theme' : 'Use dark theme'); text('theme-label', dark ? 'Light mode' : 'Dark mode');
+      }
+      function openHelp() { $('setup-help').open = true; $('setup-summary').focus(); $('setup-help').scrollIntoView({ behavior: motionPreference.matches ? 'auto' : 'smooth', block: 'start' }); }
+      let initialTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      try { const saved = localStorage.getItem('taxtrack-theme'); if (saved === 'light' || saved === 'dark') initialTheme = saved; } catch (error) { /* Theme persistence is optional for file URLs and restricted browsers. */ }
+      applyTheme(initialTheme);
+      $('theme-toggle').addEventListener('click', () => { const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; applyTheme(theme); try { localStorage.setItem('taxtrack-theme', theme); } catch (error) { /* Continue without persistence. */ } });
+      $('manual-form').addEventListener('submit', event => { event.preventDefault(); manualCheck(); });
+      $('plate-input').addEventListener('input', () => { $('plate-input').removeAttribute('aria-invalid'); $('manual-error').hidden = true; $('manual-result').hidden = true; });
+      mockRecords.forEach(record => { const button = element('button', 'example-button', record.plate); button.type = 'button'; button.append(element('small', '', record.tokenTax + ' · ' + record.registration)); button.setAttribute('aria-label', 'Verify fictional sample ' + record.plate + ', ' + record.tokenTax + ', ' + record.registration); button.addEventListener('click', () => { $('plate-input').value = record.plate; manualCheck(); $('plate-input').focus(); }); $('example-list').append(button); });
+      document.querySelectorAll('[data-source]').forEach(button => button.addEventListener('click', () => { if (state.selected !== button.dataset.source) loadSource(button.dataset.source); }));
+      $('pause-button').addEventListener('click', () => { if (!state.userPaused && ['loading', 'playing', 'buffering'].includes(state.mode)) pausePlayback(); else resumePlayback(); });
+      $('reset-button').addEventListener('click', resetSession);
+      $('media-action').addEventListener('click', () => { if (state.source && state.source.videoBase64 && !envelopeError && !sourceErrors.has(state.selected)) resumePlayback(); else openHelp(); });
+      document.addEventListener('visibilitychange', () => { if (document.hidden && state.source && state.source.videoBase64 && !state.userPaused && ['playing', 'loading', 'buffering'].includes(state.mode)) pausePlayback('Paused while this tab is hidden. Select Resume when ready.'); });
+      window.addEventListener('pagehide', () => { state.sourceEpoch++; cancelFrameLoop(); decoder.pause(); state.userPaused = true; });
+      window.addEventListener('pageshow', event => { if (event.persisted) loadSource(state.selected); });
+      readEmbeddedData(); updateStats(); loadSource('closeup');
+    })();
+  </script>
+</body>
+</html>
